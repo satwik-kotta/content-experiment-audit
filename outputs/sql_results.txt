@@ -1,0 +1,50 @@
+== sql/01_load.sql
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+COPY 22666
+INSERT 0 22666
+TRUNCATE TABLE
+COPY 105551
+INSERT 0 105551
+TRUNCATE TABLE
+COPY 22600
+INSERT 0 22600
+DROP TABLE
+SELECT 122383
+CREATE INDEX
+== sql/02_profile.sql
+    split     | tests | variants | impressions | clicks  | ctr_pct | first_test | last_test  
+--------------+-------+----------+-------------+---------+---------+------------+------------
+ ALL          | 25472 |   122383 |   426368073 | 5608682 |   1.315 | 2013-01-24 | 2015-04-30
+ confirmatory | 17837 |    85699 |   298332492 | 3948802 |   1.324 | 2013-01-24 | 2015-04-30
+ exploratory  |  3823 |    18388 |    64188299 |  843538 |   1.314 | 2013-01-26 | 2015-04-29
+ holdout      |  3812 |    18296 |    63847282 |  816342 |   1.279 | 2013-01-24 | 2015-04-29
+(4 rows)
+
+ dropped_rows 
+--------------
+        28434
+(1 row)
+
+ single_variant_tests | tests 
+----------------------+-------
+                    2 | 25472
+(1 row)
+
+ tests_with_identical_variants | identical_variants 
+-------------------------------+--------------------
+                          2687 |              12013
+(1 row)
+
+ median_test_impressions | median_variant_impressions | median_variants_per_test 
+-------------------------+----------------------------+--------------------------
+                   15117 |                       3083 |                        5
+(1 row)
+
+ median_best_vs_avg_lift 
+-------------------------
+      0.2950295649648569
+(1 row)
+

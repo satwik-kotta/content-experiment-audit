@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Content Experiment Audit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<style>
+:root{color-scheme:light;--bg:#f4f3ef;--surface:#fcfcfb;--line:#e4e2dc;--text:#0b0b0b;--text2:#52514e;--muted:#8a8984;
+--s1:#2a78d6;--s2:#eb6834;--neutral:#c9c7c0;--good:#008300;--bad:#c4302b;--grid:#ecebe6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#111110;--surface:#1a1a19;--line:#2c2c2a;--text:#fff;--text2:#c3c2b7;--muted:#8f8e86;--s1:#3987e5;--s2:#d95926;--neutral:#4a4a46;--good:#3aa63a;--bad:#e66767;--grid:#2a2a28}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111110;--surface:#1a1a19;--line:#2c2c2a;--text:#fff;--text2:#c3c2b7;--muted:#8f8e86;--s1:#3987e5;--s2:#d95926;--neutral:#4a4a46;--good:#3aa63a;--bad:#e66767;--grid:#2a2a28}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 48px}
+.wrap{max-width:1120px;margin:0 auto}
+h1{font-size:22px;letter-spacing:-.01em;margin-bottom:4px}
+.sub{color:var(--text2);max-width:780px;margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.k-label{color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.k-val{font-size:26px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.k-note{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:12px}
+.card h2{font-size:14px;font-weight:650;margin-bottom:2px}
+.cap{color:var(--text2);font-size:12.5px;margin-bottom:6px}
+.chart{height:290px;width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text2);margin:2px 0 4px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.wide{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--text2);font-weight:600;font-size:12px}
+.num{text-align:right}
+.yes{color:var(--good);font-weight:600}.no{color:var(--muted)}
+footer{color:var(--muted);font-size:12px;margin-top:16px}
+</style></head><body><div class="wrap">
+<h1>How trustworthy were 25,000 randomized content A/B tests?</h1>
+<div class="sub">An audit of the randomized headline experiments in the Upworthy Research Archive (2013–2015): <b id="scale"></b>. Tests from the period the archive’s authors flag as not fully randomized are excluded. Identical variants that ran inside the same test act as built-in A/A tests, which show how noisy the platform really was.</div>
+
+<section class="kpis">
+ <div class="card"><div class="k-label">A/A false-positive rate</div><div class="k-val" id="k1"></div><div class="k-note" id="k1n"></div></div>
+ <div class="card"><div class="k-label">Smallest lift a typical test can detect</div><div class="k-val" id="k2"></div><div class="k-note" id="k2n"></div></div>
+ <div class="card"><div class="k-label">Winning lift that is noise</div><div class="k-val" id="k3"></div><div class="k-note" id="k3n"></div></div>
+ <div class="card"><div class="k-label">Declared winners that hold up</div><div class="k-val" id="k4"></div><div class="k-note" id="k4n"></div></div>
+</section>
+
+<section class="grid">
+ <div class="card"><h2>A/A tests: p-values should be flat</h2><p class="cap">Identical variant pairs. A calibrated test puts 5% of pairs in each bar; the dashed line marks that.</p>
+  <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>Standard z-test</span><span><i class="sw" style="background:var(--s1)"></i>Recalibrated (variance × <span id="phi"></span>)</span></div>
+  <div class="chart" id="c1"></div></div>
+ <div class="card"><h2>More traffic, more false alarms</h2><p class="cap">A/A false-positive rate by the variant's traffic quartile. Noise grows faster than the binomial model assumes.</p><div class="chart" id="c2"></div></div>
+ <div class="card"><h2>Most tests could only see huge effects</h2><p class="cap">Minimum detectable relative lift per test (80% power, α 0.05, variance-corrected).</p><div class="chart" id="c3"></div></div>
+ <div class="card"><h2>Winner's curse</h2><p class="cap">Best variant's lift over its test average: as observed vs after empirical-Bayes shrinkage.</p>
+  <div class="legend"><span><i class="sw" style="background:var(--s2)"></i>Observed</span><span><i class="sw" style="background:var(--s1)"></i>Shrunk estimate</span></div>
+  <div class="chart" id="c4"></div></div>
+ <div class="card wide"><h2>What makes a headline get clicked</h2><p class="cap">Within-test comparisons (same image, different headline). Features were found on the exploratory split and then tested on the separate confirmatory split; bars and 95% intervals are the confirmatory estimates.</p>
+  <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Discovered and confirmed</span><span><i class="sw" style="background:var(--neutral)"></i>No effect in either split</span></div>
+  <div class="chart" id="c5" style="height:330px"></div>
+  <div style="overflow-x:auto;margin-top:8px"><table id="tbl"></table></div></div>
+</section>
+<footer>Data: Upworthy Research Archive (Matias, Munger, Aubin Le Quere & Ebersole, <i>Scientific Data</i>, 2021). Analysis: PostgreSQL + Python (NumPy, pandas, SciPy). Code: github.com/satwik-kotta/content-experiment-audit</footer>
+</div>
+<script>
+const E={
+  "archive_tests": 32487,
+  "excluded_not_randomized": 7017,
+  "tests": 25470,
+  "variants": 122381,
+  "impressions": 426361041,
+  "clicks": 5608535,
+  "ctr": 0.013154426555591415,
+  "aa": {
+    "pairs": 2815,
+    "tests": 2687,
+    "fpr_05": 0.13179396092362344,
+    "ks_uniform_p": 1.5483065467007617e-34,
+    "median_noise_lift": 0.20471898790864285,
+    "share_noise_lift_over_10pct": 0.7092072520440811,
+    "p_hist": [
+      371,
+      202,
+      158,
+      155,
+      141,
+      144,
+      119,
+      121,
+      123,
+      105,
+      113,
+      111,
+      124,
+      124,
+      110,
+      152,
+      121,
+      94,
+      99,
+      128
+    ],
+    "phi": 1.5643343185943142,
+    "phi_mean_based": 1.8814386645682653,
+    "fpr_05_recalibrated": 0.06571936056838366,
+    "p_hist_recalibrated": [
+      185,
+      141,
+      133,
+      145,
+      127,
+      139,
+      137,
+      144,
+      124,
+      132,
+      136,
+      120,
+      141,
+      132,
+      151,
+      137,
+      183,
+      140,
+      118,
+      150
+    ],
+    "fpr_by_traffic": {
+      "Q1 (smallest)": 0.07954545454545454,
+      "Q2": 0.1173974540311174,
+      "Q3": 0.13428571428571429,
+      "Q4 (largest)": 0.19602272727272727
+    }
+  },
+  "power": {
+    "median_variant_impressions": 3083.0,
+    "median_test_impressions": 15118.5,
+    "median_mde_rel": 0.7972813251700419,
+    "share_can_detect_10pct": 0.0,
+    "share_can_detect_20pct": 7.852991989948171e-05,
+    "share_can_detect_50pct": 0.07703785142139155,
+    "mde_hist": [
+      0,
+      0,
+      0,
+      2,
+      5,
+      21,
+      118,
+      276,
+      591,
+      949,
+      1348,
+      1649,
+      1887,
+      2059,
+      2002,
+      1925,
+      1771,
+      1637,
+      1378,
+      1296,
+      1086,
+      883,
+      733,
+      665,
+      504,
+      449,
+      398,
+      307,
+      251,
+      171,
+      175,
+      120,
+      119,
+      111,
+      85,
+      69,
+      80,
+      51,
+      48,
+      249
+    ],
+    "median_ctr": 0.011555133990591437,
+    "n_per_arm_for_10pct": 210060.6511964009
+  },
+  "winners_curse": {
+    "tau": 0.16772796366742115,
+    "median_observed_lift": 0.3117244016829397,
+    "median_eb_lift": 0.125094015214788,
+    "median_shrink": 0.47595150986776186,
+    "obs_hist": [
+      382,
+      1222,
+      2240,
+      2879,
+      2838,
+      2614,
+      2374,
+      2094,
+      1779,
+      1371,
+      1149,
+      903,
+      710,
+      581,
+      487,
+      381,
+      287,
+      223,
+      223,
+      145,
+      114,
+      81,
+      85,
+      61,
+      56,
+      34,
+      26,
+      23,
+      16,
+      90
+    ],
+    "eb_hist": [
+      2107,
+      7071,
+      6569,
+      4143,
+      2372,
+      1349,
+      739,
+      437,
+      273,
+      141,
+      98,
+      66,
+      38,
+      23,
+      12,
+      13,
+      7,
+      4,
+      0,
+      2,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "share_of_lift_that_is_noise": 0.598703166837663
+  },
+  "declared_winners": {
+    "tests": 5949,
+    "share_tests_with_winner": 0.23356890459363958,
+    "survive_bonferroni_only": 0.2992099512523113,
+    "survive_corrected": 0.18490502605479914
+  }
+}, H={
+  "exploratory": {
+    "variants": 9242,
+    "tests": 2000,
+    "impressions": 32590755
+  },
+  "confirmatory": {
+    "variants": 44647,
+    "tests": 9628,
+    "impressions": 156542012
+  },
+  "features": [
+    {
+      "feature": "question",
+      "label": "Asks a question",
+      "explore_lift": -0.08747607007315729,
+      "explore_p": 1.4141005567530828e-11,
+      "confirm_lift": -0.08310507877188814,
+      "confirm_lo": -0.09445044864470396,
+      "confirm_hi": -0.07161756602311554,
+      "confirm_p": 1.8083887628714698e-42,
+      "prevalence": 0.1679396152037091,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "number",
+      "label": "Contains a number",
+      "explore_lift": 0.05287078430691724,
+      "explore_p": 0.0007390796884939804,
+      "confirm_lift": 0.06064169502144196,
+      "confirm_lo": 0.04590949467359994,
+      "confirm_hi": 0.07558140637113857,
+      "confirm_p": 1.585529488716517e-16,
+      "prevalence": 0.18422290411449818,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "you_your",
+      "label": "Says 'you/your'",
+      "explore_lift": 0.0006349108452891576,
+      "explore_p": 0.9616644613120169,
+      "confirm_lift": 0.00785681705575054,
+      "confirm_lo": -0.0032210620055721593,
+      "confirm_hi": 0.019057812085739482,
+      "confirm_p": 0.16517874373559394,
+      "prevalence": 0.24570519855757386,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "this_these",
+      "label": "Says 'this/these'",
+      "explore_lift": 0.04078628123986678,
+      "explore_p": 0.0011056266417100327,
+      "confirm_lift": 0.05128652053623713,
+      "confirm_lo": 0.0398295309257517,
+      "confirm_hi": 0.0628697448871592,
+      "confirm_p": 3.687431389255461e-19,
+      "prevalence": 0.2524917687638587,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "negative_word",
+      "label": "Negative word (no, never, worst\u2026)",
+      "explore_lift": 0.0010166886051589273,
+      "explore_p": 0.9352567394083048,
+      "confirm_lift": 0.0057913683755081045,
+      "confirm_lo": -0.005586964724210715,
+      "confirm_hi": 0.017299895327816808,
+      "confirm_p": 0.3198246490033081,
+      "prevalence": 0.183662956077676,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "exclamation",
+      "label": "Exclamation mark",
+      "explore_lift": -0.11709095267657153,
+      "explore_p": 0.00028943592174158247,
+      "confirm_lift": -0.060074820971463716,
+      "confirm_lo": -0.08814990520831915,
+      "confirm_hi": -0.031135328912084988,
+      "confirm_p": 6.217764623038795e-05,
+      "prevalence": 0.02076287320536654,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "quote",
+      "label": "Quotation",
+      "explore_lift": 0.01020391525205873,
+      "explore_p": 0.8740275659092679,
+      "confirm_lift": -0.03173264395774656,
+      "confirm_lo": -0.07548314641839084,
+      "confirm_hi": 0.0140882441947794,
+      "confirm_p": 0.17163709057344367,
+      "prevalence": 0.01160212332295563,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "long_15plus_words",
+      "label": "15+ words",
+      "explore_lift": 0.05189307904661169,
+      "explore_p": 2.966807325544478e-06,
+      "confirm_lift": 0.04326657667711375,
+      "confirm_lo": 0.03360105880150147,
+      "confirm_hi": 0.053022479750194876,
+      "confirm_p": 4.693942007505519e-19,
+      "prevalence": 0.5973301677604318,
+      "discovered": true,
+      "confirmed": true
+    }
+  ]
+};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pct=(x,d=1)=>(x*100).toFixed(d)+'%', fmt=n=>Math.round(n).toLocaleString('en-US');
+const big=n=>n>=1e6?(n/1e6).toFixed(0)+'M':fmt(n);
+scale.textContent=fmt(E.tests)+' tests, '+fmt(E.variants)+' variants, '+big(E.impressions)+' impressions';
+phi.textContent=E.aa.phi.toFixed(2);
+k1.textContent=pct(E.aa.fpr_05); k1n.textContent='vs 5% expected · '+fmt(E.aa.pairs)+' identical pairs · '+pct(E.aa.fpr_05_recalibrated)+' after recalibration';
+k2.textContent='+'+pct(E.power.median_mde_rel,0); k2n.textContent='median test · '+pct(E.power.share_can_detect_20pct,2)+' of tests could detect a 20% lift';
+k3.textContent=pct(E.winners_curse.share_of_lift_that_is_noise,0); k3n.textContent='median winner: +'+pct(E.winners_curse.median_observed_lift,0)+' observed → +'+pct(E.winners_curse.median_eb_lift,0)+' shrunk';
+k4.textContent=pct(E.declared_winners.survive_corrected,0); k4n.textContent='of '+fmt(E.declared_winners.tests)+' declared winners survive a corrected test';
+const charts=['c1','c2','c3','c4','c5'].map(id=>echarts.init(document.getElementById(id),null,{renderer:'svg'}));
+function base(){return{textStyle:{fontFamily:'system-ui,sans-serif',color:css('--text2')},grid:{left:48,right:14,top:18,bottom:34},
+ tooltip:{backgroundColor:css('--surface'),borderColor:css('--line'),textStyle:{color:css('--text')}}};}
+const ax=(data,o={})=>({type:'category',data,axisLine:{lineStyle:{color:css('--line')}},axisTick:{show:false},axisLabel:{color:css('--text2'),...o}});
+const ay=(f,o={})=>({type:'value',axisLabel:{formatter:f,color:css('--text2')},splitLine:{lineStyle:{color:css('--grid')}},...o});
+function render(){
+ const s1=css('--s1'),s2=css('--s2'),tx=css('--text');
+ // c1 A/A histograms (as share of pairs)
+ const n=E.aa.pairs, bins=E.aa.p_hist.map((_,i)=>(i*0.05).toFixed(2)+'–'+((i+1)*0.05).toFixed(2));
+ charts[0].setOption({...base(),tooltip:{...base().tooltip,trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>pct(v)},
+  xAxis:ax(bins,{interval:3,formatter:v=>'p '+v.split('–')[0]}),yAxis:ay(v=>Math.round(v*100)+'%'),
+  series:[{name:'Standard z-test',type:'bar',barGap:'10%',itemStyle:{color:s2,borderRadius:[3,3,0,0]},data:E.aa.p_hist.map(c=>c/n),
+    markLine:{silent:true,symbol:'none',lineStyle:{color:tx,type:'dashed'},label:{formatter:'expected 5%',color:css('--text2'),position:'insideEndTop'},data:[{yAxis:0.05}]}},
+   {name:'Recalibrated',type:'bar',itemStyle:{color:s1,borderRadius:[3,3,0,0]},data:E.aa.p_hist_recalibrated.map(c=>c/n)}]},true);
+ // c2 FPR by traffic
+ const q=Object.keys(E.aa.fpr_by_traffic);
+ charts[1].setOption({...base(),tooltip:{...base().tooltip,trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>pct(v)},
+  xAxis:ax(q),yAxis:ay(v=>Math.round(v*100)+'%'),
+  series:[{type:'bar',barWidth:'50%',itemStyle:{color:s2,borderRadius:[4,4,0,0]},data:q.map(k=>E.aa.fpr_by_traffic[k]),
+   label:{show:true,position:'top',color:css('--text2'),formatter:p=>pct(p.value)},
+   markLine:{silent:true,symbol:'none',lineStyle:{color:tx,type:'dashed'},label:{formatter:'5% target',color:css('--text2'),position:'insideEndTop'},data:[{yAxis:0.05}]}}]},true);
+ // c3 MDE histogram
+ const mb=E.power.mde_hist.map((_,i)=>i*0.05);
+ charts[2].setOption({...base(),tooltip:{...base().tooltip,trigger:'axis',formatter:p=>'MDE '+pct(mb[p[0].dataIndex],0)+'–'+pct(mb[p[0].dataIndex]+0.05,0)+'<br>'+fmt(p[0].value)+' tests'},
+  xAxis:ax(mb.map(v=>pct(v,0)),{interval:3}),yAxis:ay(v=>fmt(v)),
+  series:[{type:'bar',barCategoryGap:'8%',data:E.power.mde_hist.map((c,i)=>({value:c,itemStyle:{color:i<2?s1:css('--neutral'),borderRadius:[3,3,0,0]}})),
+   markLine:{silent:true,symbol:'none',lineStyle:{color:tx,type:'dashed'},label:{formatter:'10% lift',color:css('--text2')},data:[{xAxis:2}]}}]},true);
+ // c4 winner's curse
+ const wb=E.winners_curse.obs_hist.map((_,i)=>i*0.05);
+ charts[3].setOption({...base(),tooltip:{...base().tooltip,trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>fmt(v)+' tests'},
+  xAxis:ax(wb.map(v=>'+'+pct(v,0)),{interval:4}),yAxis:ay(v=>fmt(v)),
+  series:[{name:'Observed',type:'bar',barGap:'0%',itemStyle:{color:s2},data:E.winners_curse.obs_hist},
+          {name:'Shrunk estimate',type:'bar',itemStyle:{color:s1},data:E.winners_curse.eb_hist}]},true);
+ // c5 forest plot
+ const F=[...H.features].sort((a,b)=>a.confirm_lift-b.confirm_lift);
+ charts[4].setOption({...base(),grid:{left:220,right:30,top:10,bottom:34},
+  tooltip:{...base().tooltip,trigger:'item',formatter:p=>{const f=F[p.dataIndex];return `<b>${f.label}</b><br>Confirmatory: ${f.confirm_lift>0?'+':''}${pct(f.confirm_lift)} [${pct(f.confirm_lo)}, ${pct(f.confirm_hi)}]<br>Exploratory: ${f.explore_lift>0?'+':''}${pct(f.explore_lift)}<br>${pct(f.prevalence,0)} of headlines`}},
+  yAxis:{type:'category',data:F.map(f=>f.label),axisLabel:{color:css('--text2')},axisLine:{show:false},axisTick:{show:false}},
+  xAxis:ay(v=>(v>0?'+':'')+Math.round(v*100)+'%',{min:-0.12,max:0.1,interval:0.04}),
+  series:[{type:'bar',barWidth:14,data:F.map(f=>({value:f.confirm_lift,itemStyle:{color:f.confirmed?s1:css('--neutral'),borderRadius:3}}))},
+   {type:'custom',silent:true,z:10,renderItem:(p,api)=>{const lo=api.coord([api.value(1),api.value(0)]),hi=api.coord([api.value(2),api.value(0)]);
+     return{type:'group',children:[{type:'line',shape:{x1:lo[0],y1:lo[1],x2:hi[0],y2:hi[1]},style:{stroke:tx,lineWidth:1.5}},
+       {type:'line',shape:{x1:lo[0],y1:lo[1]-4,x2:lo[0],y2:lo[1]+4},style:{stroke:tx,lineWidth:1.5}},
+       {type:'line',shape:{x1:hi[0],y1:hi[1]-4,x2:hi[0],y2:hi[1]+4},style:{stroke:tx,lineWidth:1.5}}]};},
+    encode:{x:[1,2],y:0},data:F.map((f,i)=>[i,f.confirm_lo,f.confirm_hi])}]},true);
+ tbl.innerHTML='<tr><th>Headline feature</th><th class="num">Share of headlines</th><th class="num">Exploratory lift</th><th class="num">Confirmatory lift (95% CI)</th><th>Result</th></tr>'+
+  [...H.features].sort((a,b)=>b.confirm_lift-a.confirm_lift).map(f=>`<tr><td>${f.label}</td><td class="num">${pct(f.prevalence,0)}</td><td class="num">${f.explore_lift>0?'+':''}${pct(f.explore_lift)}</td><td class="num">${f.confirm_lift>0?'+':''}${pct(f.confirm_lift)} [${pct(f.confirm_lo)}, ${pct(f.confirm_hi)}]</td><td class="${f.confirmed?'yes':'no'}">${f.confirmed?'Confirmed':f.discovered?'Did not replicate':'No effect'}</td></tr>`).join('');
+}
+render();
+addEventListener('resize',()=>charts.forEach(c=>c.resize()));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+</script></body></html>

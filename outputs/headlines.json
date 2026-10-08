@@ -1,0 +1,118 @@
+{
+  "exploratory": {
+    "variants": 9242,
+    "tests": 2000,
+    "impressions": 32590755
+  },
+  "confirmatory": {
+    "variants": 44647,
+    "tests": 9628,
+    "impressions": 156542012
+  },
+  "features": [
+    {
+      "feature": "question",
+      "label": "Asks a question",
+      "explore_lift": -0.08747607007315729,
+      "explore_p": 1.4141005567530828e-11,
+      "confirm_lift": -0.08310507877188814,
+      "confirm_lo": -0.09445044864470396,
+      "confirm_hi": -0.07161756602311554,
+      "confirm_p": 1.8083887628714698e-42,
+      "prevalence": 0.1679396152037091,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "number",
+      "label": "Contains a number",
+      "explore_lift": 0.05287078430691724,
+      "explore_p": 0.0007390796884939804,
+      "confirm_lift": 0.06064169502144196,
+      "confirm_lo": 0.04590949467359994,
+      "confirm_hi": 0.07558140637113857,
+      "confirm_p": 1.585529488716517e-16,
+      "prevalence": 0.18422290411449818,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "you_your",
+      "label": "Says 'you/your'",
+      "explore_lift": 0.0006349108452891576,
+      "explore_p": 0.9616644613120169,
+      "confirm_lift": 0.00785681705575054,
+      "confirm_lo": -0.0032210620055721593,
+      "confirm_hi": 0.019057812085739482,
+      "confirm_p": 0.16517874373559394,
+      "prevalence": 0.24570519855757386,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "this_these",
+      "label": "Says 'this/these'",
+      "explore_lift": 0.04078628123986678,
+      "explore_p": 0.0011056266417100327,
+      "confirm_lift": 0.05128652053623713,
+      "confirm_lo": 0.0398295309257517,
+      "confirm_hi": 0.0628697448871592,
+      "confirm_p": 3.687431389255461e-19,
+      "prevalence": 0.2524917687638587,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "negative_word",
+      "label": "Negative word (no, never, worst\u2026)",
+      "explore_lift": 0.0010166886051589273,
+      "explore_p": 0.9352567394083048,
+      "confirm_lift": 0.0057913683755081045,
+      "confirm_lo": -0.005586964724210715,
+      "confirm_hi": 0.017299895327816808,
+      "confirm_p": 0.3198246490033081,
+      "prevalence": 0.183662956077676,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "exclamation",
+      "label": "Exclamation mark",
+      "explore_lift": -0.11709095267657153,
+      "explore_p": 0.00028943592174158247,
+      "confirm_lift": -0.060074820971463716,
+      "confirm_lo": -0.08814990520831915,
+      "confirm_hi": -0.031135328912084988,
+      "confirm_p": 6.217764623038795e-05,
+      "prevalence": 0.02076287320536654,
+      "discovered": true,
+      "confirmed": true
+    },
+    {
+      "feature": "quote",
+      "label": "Quotation",
+      "explore_lift": 0.01020391525205873,
+      "explore_p": 0.8740275659092679,
+      "confirm_lift": -0.03173264395774656,
+      "confirm_lo": -0.07548314641839084,
+      "confirm_hi": 0.0140882441947794,
+      "confirm_p": 0.17163709057344367,
+      "prevalence": 0.01160212332295563,
+      "discovered": false,
+      "confirmed": false
+    },
+    {
+      "feature": "long_15plus_words",
+      "label": "15+ words",
+      "explore_lift": 0.05189307904661169,
+      "explore_p": 2.966807325544478e-06,
+      "confirm_lift": 0.04326657667711375,
+      "confirm_lo": 0.03360105880150147,
+      "confirm_hi": 0.053022479750194876,
+      "confirm_p": 4.693942007505519e-19,
+      "prevalence": 0.5973301677604318,
+      "discovered": true,
+      "confirmed": true
+    }
+  ]
+}
